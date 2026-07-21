@@ -1,0 +1,22 @@
+[Unit]
+Description=hillclimb-cam encoder (%i) -> MediaMTX SRT
+After=network-online.target
+Wants=network-online.target
+# No start-rate limit: Restart=always must keep retrying across a hub/link outage.
+StartLimitIntervalSec=0
+
+[Service]
+# install.sh substitutes __RUN_USER__ with the invoking user. If you install by
+# hand, replace it (or delete both lines to run as root).
+User=__RUN_USER__
+SupplementaryGroups=video
+RuntimeDirectory=cam-stream
+RuntimeDirectoryPreserve=yes
+TimeoutStopSec=15
+EnvironmentFile=/etc/default/cam-stream-%i
+ExecStart=/usr/local/bin/cam-stream.sh
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

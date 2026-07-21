@@ -1,0 +1,5 @@
+# local, machine-specific env files (the real config lives in /etc/default on the Pi)
+*.env
+!examples/*.env.example
+*.local
+.DS_Store
