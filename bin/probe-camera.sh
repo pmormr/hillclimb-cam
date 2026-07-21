@@ -19,12 +19,19 @@ if ! have v4l2-ctl; then
   exit 0
 fi
 
-echo "== Capture devices (by USB port; stable across reboots) =="
+echo "== USB cameras (by port; stable across reboots) =="
+# Restrict to USB devices (the platform codec nodes — HW encoder / HEVC decoder —
+# also expose *-video-index0 and must not be offered as cameras). The Pi exposes
+# each USB cam under two controller aliases (usb-/usbv2-), both resolving to the
+# same node; dedupe by the resolved device.
 shopt -s nullglob
+declare -A seen
 found=0
-for dev in /dev/v4l/by-path/*-video-index0; do
-  found=1
+for dev in /dev/v4l/by-path/*usb*-video-index0; do
   real="$(readlink -f "$dev")"
+  [ -n "${seen[$real]:-}" ] && continue
+  seen[$real]=1
+  found=1
   card="$(v4l2-ctl -d "$real" --info 2>/dev/null | awk -F': ' '/Card type/{print $2; exit}')"
   echo
   echo "-- $dev"

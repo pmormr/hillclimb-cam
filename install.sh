@@ -47,8 +47,17 @@ echo
 ask CAM_PATH "MediaMTX path / instance (cam2, cam3, ... — cam1 is picam1)" cam2
 ask HUB_HOST "Hub IP (the van's MediaMTX)" 192.168.42.178
 
+# USB cameras only, deduped by resolved node (skip the platform codec nodes; the
+# Pi lists each USB cam under two controller aliases that map to the same device).
 shopt -s nullglob
-DEVS=(/dev/v4l/by-path/*-video-index0)
+declare -A seen_dev
+DEVS=()
+for dev in /dev/v4l/by-path/*usb*-video-index0; do
+  real="$(readlink -f "$dev")"
+  [ -n "${seen_dev[$real]:-}" ] && continue
+  seen_dev[$real]=1
+  DEVS+=("$dev")
+done
 shopt -u nullglob
 if [ "${#DEVS[@]}" -eq 0 ]; then
   ask CAM_DEVICE "Camera device path" /dev/video0
