@@ -133,6 +133,7 @@ else
     install -d -g systemd-journal -m 2755 /var/log/journal
     systemd-tmpfiles --create --prefix /var/log/journal 2>/dev/null || true
     systemctl restart systemd-journald 2>/dev/null || true
+    journalctl --flush 2>/dev/null || true   # migrate now, don't wait for a reboot
     echo "Persistent journald enabled (Storage=persistent)."
   fi
 fi
