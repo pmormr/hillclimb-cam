@@ -119,13 +119,21 @@ sed "s/__RUN_USER__/${RUN_USER}/g" "$REPO_DIR/systemd/cam-stream@.service" > "$U
 install -m 0644 "$REPO_DIR/systemd/cam-watchdog@.service" "$UNIT_DST/cam-watchdog@.service"
 
 # --- persistent journal (so a reboot leaves a forensic trail) ---------------
-if [ ! -d /var/log/journal ]; then
+# Storage=auto only uses /var/log/journal if the dir existed when journald
+# started — a Pi easily ends up volatile with the dir present but unused. Force
+# it with an explicit Storage=persistent drop-in.
+if grep -qsiE '^[[:space:]]*Storage[[:space:]]*=[[:space:]]*persistent' \
+     /etc/systemd/journald.conf /etc/systemd/journald.conf.d/*.conf 2>/dev/null; then
+  echo "Persistent journald already configured."
+else
   ask PERSIST "Enable persistent system logs (survive reboot)? (y/n)" y
   if [ "$PERSIST" = y ]; then
-    mkdir -p /var/log/journal
+    install -d -m 0755 /etc/systemd/journald.conf.d
+    printf '[Journal]\nStorage=persistent\n' > /etc/systemd/journald.conf.d/persistent.conf
+    install -d -g systemd-journal -m 2755 /var/log/journal
     systemd-tmpfiles --create --prefix /var/log/journal 2>/dev/null || true
-    systemctl kill -s USR1 systemd-journald 2>/dev/null || true
-    echo "Persistent journald enabled."
+    systemctl restart systemd-journald 2>/dev/null || true
+    echo "Persistent journald enabled (Storage=persistent)."
   fi
 fi
 

@@ -37,13 +37,18 @@ stalling.
 
 ## Quick start
 
-On the Pi:
+On the Pi (install `git` first if the image doesn't have it — minimal Pi OS
+images often don't):
 
 ```bash
+sudo apt install -y git      # skip if you already have git
 git clone https://github.com/pmormr/hillclimb-cam.git
 cd hillclimb-cam
 sudo ./install.sh
 ```
+
+No `git`? Download the tarball instead:
+`curl -fsSL https://github.com/pmormr/hillclimb-cam/archive/refs/heads/main.tar.gz | tar xz && cd hillclimb-cam-main`.
 
 The installer probes your camera, asks a handful of questions (path name, hub IP,
 resolution/fps/bitrate — all with sensible defaults), writes the config, installs
