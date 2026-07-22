@@ -129,6 +129,19 @@ cat /run/cam-stream/cam2.progress           # live ffmpeg frame/fps/drops
 - **Log timestamps jump (e.g. 09:43 → 19:30) within one boot.** A Pi has no
   real-time clock; it boots with a stale time, then NTP steps it. Normal.
 
+## Unattended install
+
+Preset any prompt as an environment variable and `install.sh` skips it (and falls
+back to defaults when there's no terminal, e.g. over `ssh` without `-t`):
+
+```bash
+sudo bash -c 'CAM_PATH=cam2 HUB_HOST=192.168.42.178 CAM_INPUT_FORMAT=yuyv422 \
+  CAM_W=1280 CAM_H=720 CAM_FPS=10 CAM_BITRATE=2500k ./install.sh'
+```
+
+Re-running the installer (interactively or unattended) restarts the services, so
+it doubles as "apply my config changes."
+
 ## Manual install (advanced)
 
 ```bash

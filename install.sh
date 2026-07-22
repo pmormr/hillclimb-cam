@@ -15,7 +15,17 @@ UNIT_DST=/etc/systemd/system
 RUN_USER="${SUDO_USER:-root}"
 
 ask() {  # ask VAR "prompt" ["default"]
+  # Honors a preset environment variable (unattended runs:
+  # `sudo CAM_PATH=cam1 HUB_HOST=... ./install.sh`) and falls back to the default
+  # when there is no controlling terminal (piped / over ssh without a tty).
   local __var="$1" __prompt="$2" __default="${3:-}" __reply
+  if [ -n "${!__var:-}" ]; then
+    echo "$__prompt: ${!__var} (preset)"; return
+  fi
+  if [ ! -r /dev/tty ]; then
+    printf -v "$__var" '%s' "$__default"
+    echo "$__prompt: ${__default:-<empty>} (non-interactive default)"; return
+  fi
   read -rp "$__prompt${__default:+ [$__default]}: " __reply </dev/tty
   printf -v "$__var" '%s' "${__reply:-$__default}"
 }
@@ -59,7 +69,9 @@ for dev in /dev/v4l/by-path/*usb*-video-index0; do
   DEVS+=("$dev")
 done
 shopt -u nullglob
-if [ "${#DEVS[@]}" -eq 0 ]; then
+if [ -n "${CAM_DEVICE:-}" ]; then
+  echo "Camera device (preset): $CAM_DEVICE"
+elif [ "${#DEVS[@]}" -eq 0 ]; then
   ask CAM_DEVICE "Camera device path" /dev/video0
 elif [ "${#DEVS[@]}" -eq 1 ]; then
   CAM_DEVICE="${DEVS[0]}"; echo "Camera device: $CAM_DEVICE"
@@ -117,9 +129,12 @@ if [ ! -d /var/log/journal ]; then
   fi
 fi
 
-# --- enable + start ---------------------------------------------------------
+# --- enable + (re)start -----------------------------------------------------
+# restart (not enable --now) so re-running the installer to change config
+# actually reloads a service that is already running.
 systemctl daemon-reload
-systemctl enable --now "cam-stream@${CAM_PATH}" "cam-watchdog@${CAM_PATH}"
+systemctl enable "cam-stream@${CAM_PATH}" "cam-watchdog@${CAM_PATH}"
+systemctl restart "cam-stream@${CAM_PATH}" "cam-watchdog@${CAM_PATH}"
 
 echo; echo "== enabled cam-stream@${CAM_PATH} + cam-watchdog@${CAM_PATH} =="
 sleep 3
